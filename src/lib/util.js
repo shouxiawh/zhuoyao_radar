@@ -85,10 +85,21 @@ const abc1 = e => {
     r[t] = e.charCodeAt(t);
   return r;
 };
+
+const getTime = ({gentime, lifetime}) => {
+  let second = (new Date((gentime + lifetime) * 1000) - new Date()) / 1000;
+  if (second <= 0) return ''
+  const minute = Math.floor(second / 60);
+  second = Math.floor(second % 60);
+  return minute + '分' + second + '秒';
+}
+
+
 module.exports = {
   getLocalStorage,
   setLocalStorage,
   utf8ByteToUnicodeStr,
   convertLocation,
-  json2buffer
+  json2buffer,
+  getTime
 };

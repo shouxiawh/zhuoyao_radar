@@ -130,7 +130,6 @@ module.exports = {
         message.longtitude = convertLocation(message.longitude);
         delete message.longitude;
       }
-
       return message;
     }
   }

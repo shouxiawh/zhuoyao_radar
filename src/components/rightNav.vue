@@ -22,26 +22,27 @@
           <p>{{ version }}</p>
           <p>捉妖雷达不会再有开发者群</p>
           <p>虚拟定位全家暴毙</p>
-          <br/>
-          <iframe
-            src="https://ghbtns.com/github-btn.html?user=liuzirui1122&repo=zhuoyao_radar&type=star&count=true&size=large"
-            frameborder="0"
-            scrolling="0"
-            width="160px"
-            height="30px"
-          ></iframe>
+          <!--<br/>-->
+          <!--<iframe-->
+            <!--src="https://ghbtns.com/github-btn.html?user=liuzirui1122&repo=zhuoyao_radar&type=star&count=true&size=large"-->
+            <!--frameborder="0"-->
+            <!--scrolling="0"-->
+            <!--width="160px"-->
+            <!--height="30px"-->
+          <!--&gt;</iframe>-->
         </div>
         <div class="side-content">
           <div class="nav-filter">
             <div class="header">筛选</div>
-            <ul v-if="mode === 'normal'">
-              <template v-for="item in filters">
-                <li :key="item.key">
-                  <span class="tag">{{item.text}}</span>
-                  <el-switch v-model="settings.fit[item.key]"> </el-switch>
-                </li>
-              </template>
-            </ul>
+            <filterMode v-if="mode === 'normal'" :filter="filter"></filterMode>
+            <!--<ul v-if="mode === 'normal'">-->
+              <!--<template v-for="item in filters">-->
+                <!--<li :key="item.key">-->
+                  <!--<span class="tag">{{item.text}}</span>-->
+                  <!--<el-switch v-model="settings.fit[item.key]"> </el-switch>-->
+                <!--</li>-->
+              <!--</template>-->
+            <!--</ul>-->
             <ul v-else>
               <template v-for="item in settings.wide">
                 <li :key="item.id">
@@ -76,9 +77,12 @@
 </template>
 <script>
 import { getLocalStorage } from '../lib/util';
-
+import filterMode from './filterMode'
 export default {
   name: 'radar-right-nav',
+  components: {
+    filterMode
+  },
   props: {
     version: {
       type: String,
@@ -95,6 +99,12 @@ export default {
     mode: {
       type: String,
       default: ''
+    },
+    filter: {
+      type: Array,
+      default () {
+        return []
+      }
     }
   },
   data() {

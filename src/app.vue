@@ -1,6 +1,7 @@
 <template>
   <div id="app">
-    <right-nav :version="APP_VERSION" :settings="settings" :show-menu.sync="showMenu" :mode="mode"></right-nav>
+    <ylInfo :data="poly.yl"></ylInfo>
+    <right-nav :version="APP_VERSION" :settings="settings" :show-menu.sync="showMenu" :mode="mode" :filter="filter"></right-nav>
     <!-- <normal-nav :version="APP_VERSION" :settings="settings" :show-menu="showMenu"></normal-nav> -->
 
     <div id="status" v-show="debug">
@@ -24,6 +25,7 @@ import map from './mixins/map';
 import RightNav from './components/rightNav';
 import socket from './mixins/socket';
 import RadarProgress from './components/radarProgress';
+import ylInfo from './components/ylInfo'
 
 import { getLocalStorage, setLocalStorage } from './lib/util';
 
@@ -40,7 +42,8 @@ export default {
   mixins: [mixins, bot, map, socket],
   components: {
     RightNav,
-    RadarProgress
+    RadarProgress,
+    ylInfo
   },
   data() {
     let showMenu = false;
@@ -106,7 +109,11 @@ export default {
         longitude: 116.3579177856,
         latitude: 39.9610780334
       },
-      progressShow: false
+      progressShow: false,
+      filter: getLocalStorage('radar_filter') || [tempdata.Data[0].Id],
+      poly: {
+        yl: null
+      }
     };
   },
   mounted() {
@@ -151,6 +158,9 @@ export default {
     if (this.mode === 'wide') {
       this.notify(`大范围搜索开启，当前最大搜索单位:${Math.pow(this.max_range, 2)}个.线程数:${this.thread}个.`)
     }
+    setInterval(() => {
+      this.refreshMarker()
+    }, 1000)
   },
   methods: {
     /**
@@ -175,16 +185,60 @@ export default {
      * 根据查询结果过滤数据，打标记
      */
     buildMarkersByData: function(t) {
-      if (t && t.length) {
+      if (t && t.length && this.buildMarkersByDataFilter(t)) {
         t.forEach(item => {
           if (
-            this.fit[0] === 'special' ||
-            this.fit.indexOf(item.sprite_id) > -1
+                  this.fit[0] === 'special' ||
+                  this.fit.indexOf(item.sprite_id) > -1
           ) {
             this.addMarkers(item);
           }
         });
       }
+    },
+    /**
+     * 根据查询结果过滤数据，打标记 Filter
+     */
+    buildMarkersByDataFilter (t) {
+      this.buildFilterPolyline()
+      t.forEach(item => {
+        if (this.filter.includes(item.sprite_id)) {
+          this.addMarkers(item);
+        }
+      });
+      return false
+    },
+    /**
+     * 创建过滤范围折线
+     */
+    buildFilterPolyline () {
+      this.poly.line = this.buildPolyline(this.poly.location, this.poly.line, '#008B00')
+    },
+    /**
+     * 创建范围折线
+     */
+    buildPolyline ({latitude, longitude}, poly, strokeColor) {
+      const lat = WIDE_SEARCH.LAT_RANGE / 2
+      const lon = WIDE_SEARCH.LNG_RANGE / 2
+      const path = [
+        new qq.maps.LatLng(latitude + lat, longitude + lon),
+        new qq.maps.LatLng(latitude + lat, longitude - lon),
+        new qq.maps.LatLng(latitude - lat, longitude - lon),
+        new qq.maps.LatLng(latitude - lat, longitude + lon),
+        new qq.maps.LatLng(latitude + lat, longitude + lon)
+      ]
+      if (!poly) {
+        return new qq.maps.Polyline({
+          path,
+          strokeColor,
+          strokeWeight: 2,
+          editable: false,
+          map: this.map
+        })
+      } else {
+        poly.setPath(path);
+      }
+      return poly
     },
     addStatusWithoutNewline: function(str) {
       this.status += str;
@@ -202,6 +256,7 @@ export default {
       this.clearAllMarkers();
 
       if (this.mode === 'normal') {
+        this.poly.location = {...this.location}
         this.sendMessage(this.initSocketMessage('1001'));
       } else {
         this.progressShow = true;

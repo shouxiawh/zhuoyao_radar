@@ -14,7 +14,9 @@ import {
   Switch,
   Notification,
   MessageBox,
-  Progress
+  Progress,
+  Input,
+  Checkbox
 } from 'element-ui';
 import './index.less';
 import 'element-ui/lib/theme-chalk/button.css';
@@ -31,6 +33,8 @@ Vue.use(Button);
 Vue.use(Switch);
 Vue.use(Icon);
 Vue.use(Progress);
+Vue.use(Input);
+Vue.use(Checkbox);
 
 let getParameter = (name, loca = window.location.href) => {
   const regexS = `[\\?&]${name}=([^&#]*)`;

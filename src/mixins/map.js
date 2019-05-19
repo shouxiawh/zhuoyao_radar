@@ -4,6 +4,8 @@
  * @Desc: mixins
  */
 
+import {getTime} from '../lib/util'
+
 module.exports = {
   methods: {
     exportPosition: function() {
@@ -31,7 +33,8 @@ module.exports = {
           this.location.latitude,
           this.location.longitude
         ),
-        zoom: 16 // 地图的中心地理坐标。
+        disableDoubleClickZoom: true,
+        zoom: 15 // 地图的中心地理坐标。
       });
 
       qq.maps.event.addListener(this.map, 'click', this.clickMap);
@@ -39,6 +42,14 @@ module.exports = {
         this.map,
         'center_changed',
         this.mapCenterChanged
+      );
+      qq.maps.event.addListener(
+          this.map,
+          'dblclick',
+          () => {
+            console.log('dblclick')
+            this.getYaolingInfo()
+          }
       );
     },
     /**
@@ -66,7 +77,8 @@ module.exports = {
         });
         this.clickMarker.setIcon(icon);
       }
-
+      this.poly.yl = null
+      this.poly.click = this.buildPolyline(this.location, this.poly.click, '#3A5FCD')
       if (this.settings.auto_search) {
         this.getYaolingInfo();
       }
@@ -75,6 +87,45 @@ module.exports = {
      * 根据妖灵信息在地图上打个标记
      */
     addMarkers(yl) {
+      const icon = new qq.maps.MarkerImage(this.getHeadImagePath(yl), null, null, null, new qq.maps.Size(40, 40))
+      const position = new qq.maps.LatLng(yl.latitude / 1e6, yl.longtitude / 1e6);
+      const marker = new qq.maps.Marker({position, map: this.map});
+      // 标记的点击事件
+      qq.maps.event.addListener(marker, 'click', () => {
+        this.$set(this.poly, 'yl', yl)
+      });
+      marker.setIcon(icon);
+      const label = this.getLabel(position, yl)
+      // 展示倒计时
+      this.markers.push({
+        position,
+        marker,
+        label,
+        yl
+      });
+    },
+    // 展示倒计时
+    getLabel (position, yl) {
+      let label = null
+      // 展示倒计时
+      if (this.settings.show_time) {
+        label = new qq.maps.Label({
+          position,
+          offset: new qq.maps.Size(-20, 5),
+          map: this.map,
+          content: getTime(yl),
+          style: {
+            border: 'none',
+            backgroundColor: 'rgba(255,255,255,.7)'
+          }
+        });
+      }
+      return label
+    },
+    /**
+     * 根据妖灵信息在地图上打个标记
+     */
+    addMarkersBak(yl) {
       let headImage = this.getHeadImagePath(yl);
 
       var time = new Date((yl.gentime + yl.lifetime) * 1000) - new Date();
@@ -86,18 +137,21 @@ module.exports = {
 
       // new icon
       let icon = new qq.maps.MarkerImage(
-        headImage,
-        null,
-        null,
-        null,
-        new qq.maps.Size(40, 40)
+          headImage,
+          null,
+          null,
+          null,
+          new qq.maps.Size(40, 40)
       );
       let position = new qq.maps.LatLng(yl.latitude / 1e6, yl.longtitude / 1e6);
       let marker = new qq.maps.Marker({
         position: position,
         map: this.map
       });
-
+      // 标记的点击事件
+      qq.maps.event.addListener(marker, 'click', () => {
+        this.$set(this.poly, 'yl', yl)
+      });
       marker.setIcon(icon);
       this.markers.push(marker);
 
@@ -120,10 +174,26 @@ module.exports = {
      * 清除标记
      */
     clearAllMarkers() {
-      for (var i = 0; i < this.markers.length; i++) {
-        this.markers[i].setMap(null);
+      // for (var i = 0; i < this.markers.length; i++) {
+      //   this.markers[i].setMap(null);
+      // }
+      // this.markers = [];
+    },
+    refreshMarker () {
+      // console.log('refreshMarker', this.markers)
+      this.markers = this.markers.filter(it => it)
+      for (let i = 0; i < this.markers.length; i++) {
+        const {position, marker, label, yl} = this.markers[i]
+        const content = getTime(yl)
+        if (!content) {
+          marker.setMap(null)
+          if (label) label.setMap(null)
+          this.markers[i] = null
+        } else {
+          if (label) label.setContent(content)
+          // this.markers[i].label = this.getLabel(position, yl)
+        }
       }
-      this.markers = [];
     }
   }
 };
