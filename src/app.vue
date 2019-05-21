@@ -142,6 +142,9 @@ export default {
         },
         e => {
           console.log(e);
+          if (e.code === 3) {
+            this.notify("无法获取设备位置信息");
+          }
         }
       )
       .catch(b => {});
