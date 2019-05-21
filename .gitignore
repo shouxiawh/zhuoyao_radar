@@ -1,3 +1,5 @@
 bot/server.html
 node_modules/
+dist/
 request.php
+.DS_Store
